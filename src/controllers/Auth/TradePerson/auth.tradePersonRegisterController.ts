@@ -9,24 +9,49 @@ import { createAppError } from "../../../middlewares/error";
 
 export const registerTradesPerson = catchAsync(
   async (req: Request, res: Response, next: NextFunction) => {
-    const { fullName, email, password, phoneNumber, trade, serviceArea, verified } = req.body;
-    let profilePhoto = null;
+    const { firstName, lastName, email, password, phone, trade, companyName, registrationNumber, experience, postcode} = req.body;
 
-    if (req.file) {
+    const {profileImage} = req.files as { [fieldname: string]: Express.Multer.File[] };
+    const {insuranceImage} = req.files as { [fieldname: string]: Express.Multer.File[] };
+    const {licenseImage} = req.files as { [fieldname: string]: Express.Multer.File[] };
+
+   
+
+    let profileImageURL = null;
+    let insuranceImageURL = null;
+    let licenseImageURL = null;
+
+    if (profileImage) {
+
       try {
-        profilePhoto = await  await uploadImage(req.file);
+        profileImageURL = await uploadImage(profileImage[0]);
       } catch (error) {
-        return next(createAppError("Image upload failed", 500));
+        return next(createAppError("Profile Image upload failed", 500));
       }
     }
 
+    if (insuranceImage) {
+      try {
+        insuranceImageURL = await uploadImage(insuranceImage[0]);
+      } catch (error) {
+        return next(createAppError("Insurance Image upload failed", 500));
+      }
+    }
+
+    if (licenseImage) {
+      try {
+        licenseImageURL = await uploadImage(licenseImage[0]);
+      } catch (error) {
+        return next(createAppError("License Image upload failed", 500));
+      }
+    }
 
     const existingUser = await TradesPerson.findOne({ email });
     if (existingUser) {
       return next(createAppError("Email already exists!", 400));
     }
 
-    const existingPhoneNumber = await TradesPerson.findOne({ phoneNumber });
+    const existingPhoneNumber = await TradesPerson.findOne({ phone });
     if (existingPhoneNumber) {
       return next(createAppError("Phone number already exists!", 400));
     }
@@ -36,18 +61,27 @@ export const registerTradesPerson = catchAsync(
 
 
     const newTradesPerson = await TradesPerson.create({
-      fullName,
+      firstName,
+      lastName,
       email,
       password: hashedPassword,
-      phoneNumber,
+      phone,
       trade,
-      serviceArea,
-      verified,
-      profilePhoto,
+      postCode:postcode,
+      experience,
+      company:{
+        name: companyName,
+        registrationNumber,
+        proofOfInsurance: insuranceImageURL
+      },
+      verified: false,
+      certifications: licenseImageURL,
+      profileImage: profileImageURL,
+      role: "tradePerson"
     });
 
     const token = jwt.sign(
-      { id: newTradesPerson._id },
+      { id: newTradesPerson._id, role: "tradePerson" },
       process.env.JWT_SECRET as string,
       { expiresIn: "1h" }
     );
@@ -60,14 +94,15 @@ export const registerTradesPerson = catchAsync(
     };
 
     res.status(201).cookie("token", token, cookieOptions).json({
+      success: true,
       message: "Registration successful, please log in!",
       token,
       tradesPerson: {
         id: newTradesPerson._id,
-        fullName: newTradesPerson.fullName,
+        fullName: newTradesPerson.firstName + " " + newTradesPerson.lastName,
         email: newTradesPerson.email,
-        phoneNumber: newTradesPerson.phoneNumber,
-        profilePhoto: newTradesPerson.profilePhoto,
+        phoneNumber: newTradesPerson.phone,
+        profileImage: newTradesPerson.profileImage,
       },
     });
   }

@@ -44,3 +44,5 @@ coverage/
 *.bak
 *.orig
 *.rej
+.vercel
+vercel.json

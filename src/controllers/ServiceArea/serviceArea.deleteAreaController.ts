@@ -12,7 +12,7 @@ export const deleteServiceArea = catchAsync(async (req: Request, res: Response, 
       return next(createAppError("Service Area not found!", 404));
     }
   
-    res.status(204).json({
+    res.status(200).json({
       status: "success",
       data: null,
     });

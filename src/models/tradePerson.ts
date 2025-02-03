@@ -1,75 +1,141 @@
-import { model, Schema, Document } from "mongoose";
+import mongoose, { Schema, Document } from "mongoose";
 
-export interface ITradesPerson extends Document {
-  fullName: string;
+export interface ITradePerson extends Document {
+  firstName: string;
+  lastName: string;
   email: string;
+  phone: string;
   password: string;
-  trade: Schema.Types.ObjectId; // Reference to the Trade
-  serviceArea: Schema.Types.ObjectId[]; // Multiple service areas
-  phoneNumber: string;
-  profilePhoto?: string;
-  verified: boolean;
+  role: string;
+  trade: mongoose.Schema.Types.ObjectId; // Reference to Trade
+  experience: number;
+  postCode: string;
+  certifications: {
+    publicId: string;
+    url: string;
+  };
+  profileImage: {
+    publicId: string;
+    url: string;
+  }; 
+  company?: {
+    name?: string;
+    proofOfInsurance?: {
+      publicId: string;
+      url: string;
+    };
+    registrationNumber?: string;
+  };
+  bio?: string;
+  businessType?: string;
+  companyWebsite?: string;
+  employeeCount?: number;
+  jobGalleries?: string[]; // Array of Cloudinary URLs
+  skills?: string[]; // Array of skill names
+  homeAddress?: {
+    addressLine1: string;
+    addressLine2?: string;
+    town: string;
+    postCode: string;
+    country: string;
+  };
+  businessAddress?: {
+    addressLine1: string;
+    addressLine2?: string;
+    town: string;
+    postCode: string;
+    country: string;
+  };
 }
 
-const TradesPersonSchema = new Schema<ITradesPerson>(
+const TradePersonSchema = new Schema<ITradePerson>(
   {
-    fullName: {
-      type: String,
-      required: [true, "Name is required!"],
-      trim: true,
-      minlength: [3, "Name must be at least 3 characters long."],
-      maxlength: [50, "Name cannot exceed 50 characters."],
-    },
+    firstName: { type: String, required: true, trim: true, minlength: 2, maxlength: 50 },
+    lastName: { type: String, required: true, trim: true, minlength: 2, maxlength: 50 },
     email: {
       type: String,
-      required: [true, "Email is required!"],
+      required: true,
       unique: true,
-      trim: true,
-      match: [/^\S+@\S+\.\S+$/, "Please provide a valid email address."],
+      lowercase: true,
+      match: /^[^\s@]+@[^\s@]+\.[^\s@]+$/, // Validates email format
+    },
+    phone: {
+      type: String,
+      required: true,
+      match: /^[0-9]{10,15}$/, // Validates phone number (10-15 digits)
     },
     password: {
       type: String,
-      required: [true, "Password is required!"],
-      minlength: [8, "Password must be at least 8 characters long."],
+      required: true,
+      minlength: 6, // Min length for password security
     },
-    trade: {
-      type: Schema.Types.ObjectId,
-      ref: "Trade",
-      required: [true, "Trade is required!"],
+    role: {
+      type: String,
+      required: true,
+      enum: ["admin", "superAdmin", "customer", "tradePerson"]
     },
-    serviceArea: [
-      {
-        type: Schema.Types.ObjectId,
-        ref: "ServiceArea",
-        validate: {
-          validator: Array.isArray,
-          message: "Service area must be an array of valid references.",
+    trade: { type: Schema.Types.ObjectId, ref: "Trade", required: true }, // Linking to Trade model
+    experience: { type: Number, required: true, min: 0, max: 50 },
+    postCode: { type: String, required: true, match: /^[A-Z0-9]{4,10}$/i }, // UK-like postcodes
+    certifications:{
+      publicId: {
+        type: String,
+        default: null, // Optional if the image is not required
+      },
+      url: {
+        type: String,
+        default: null,
+      },
+    },
+    profileImage: {
+      publicId: {
+        type: String,
+        default: null, // Optional if the image is not required
+      },
+      url: {
+        type: String,
+        default: null,
+      },
+    },
+
+    company: {
+      name: { type: String, trim: true, maxlength: 100 },
+      proofOfInsurance: {
+        publicId: {
+          type: String,
+          default: null, // Optional if the image is not required
+        },
+        url: {
+          type: String,
+          default: null,
         },
       },
-    ],
-    phoneNumber: {
-      type: String,
-      required: [true, "Phone number is required!"],
-      unique: true,
-      match: [/^\+?[1-9]\d{1,14}$/, "Please provide a valid phone number."],
+      registrationNumber: { type: String, maxlength: 20 },
     },
-    profilePhoto: {
-      type: String,
-      validate: {
-        validator: (value: string) =>
-          value.startsWith("http://") || value.startsWith("https://"),
-        message: "Profile photo must be a valid URL.",
-      },
+
+    bio: { type: String, trim: true, maxlength: 500 },
+    businessType: { type: String },
+    companyWebsite: { type: String, match: /^https?:\/\/.*/ },
+    employeeCount: { type: Number, min: 1, max: 5000 },
+    jobGalleries: { type: [String], validate: (arr: string[]) => arr.every((url) => /^https?:\/\/.*/.test(url)) },
+    skills: { type: [String] }, // Array of skill names
+
+    homeAddress: {
+      addressLine1: { type: String,  trim: true },
+      addressLine2: { type: String, trim: true },
+      town: { type: String,  trim: true },
+      postCode: { type: String,  match: /^[A-Z0-9]{4,10}$/i },
+      country: { type: String,  trim: true },
     },
-    verified: {
-      type: Boolean,
-      default: false,
+    businessAddress: {
+      addressLine1: { type: String, trim: true },
+      addressLine2: { type: String, trim: true },
+      town: { type: String, trim: true },
+      postCode: { type: String, match: /^[A-Z0-9]{4,10}$/i },
+      country: { type: String, trim: true },
     },
   },
   { timestamps: true }
 );
 
-export const TradesPerson = model<ITradesPerson>(
-  "TradesPerson",
-  TradesPersonSchema
-);
+export const TradesPerson = mongoose.model<ITradePerson>("TradePerson", TradePersonSchema);

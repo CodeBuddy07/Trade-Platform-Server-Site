@@ -40,12 +40,12 @@ export const globalErrorHandler = (
 
   res.status(err.statusCode || 500).json({
     status: "error",
-    message: err.isOperational
-      ? err.message
-      : "Something went wrong, please try again later.",
+    message: err.message || "Something went wrong, please try again later.",
   });
 };
-
+// err.isOperational
+//       ? err.message
+//       : "Something went wrong, please try again later.",
 
 export const createAppError = (
   message: string,

@@ -13,17 +13,35 @@ cloudinary.config({
 export default cloudinary;
 
 export const uploadImage = async (file: Express.Multer.File) => {
-  try {
-  
-    const result = await cloudinary.uploader.upload(file.path, {
-      folder: "TradePeople (Client Work)", 
-      use_filename: true, 
-      unique_filename: true, 
-    });
-    return result.secure_url; 
-  } catch (error) {
-    throw new Error("Image upload failed");
+  if (!file) throw new Error("Missing required parameter - file");
+
+  return new Promise((resolve, reject) => {
+    cloudinary.uploader.upload_stream(
+      { folder: "TradePeople_(Client_Work)" }, 
+      (error, result) => {
+        if (error) return reject(error);
+        resolve({
+          publicId: result?.public_id,
+          url: result?.secure_url
+        });
+      }
+    ).end(file.buffer); 
+  });
+};
+
+
+export const deleteImage = async (publicId: string) => {
+try {
+  const result = await cloudinary.uploader.destroy(publicId);
+  if (result.result === "ok") {
+    return "Image deleted successfully";
+  } else {
+    throw new Error("Failed to delete image");
   }
+} catch (error) {
+  console.error(error);
+  throw new Error("Image deletion failed");
+}
 };
 
 

@@ -13,7 +13,7 @@ import { Trade } from "../../models/trades";
       return next(createAppError("Trade not found!", 404));
     }
   
-    res.status(204).json({
+    res.status(200).json({
       status: "success",
       data: null,
     });

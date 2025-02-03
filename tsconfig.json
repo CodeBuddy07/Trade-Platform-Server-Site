@@ -1,13 +1,13 @@
 {
   "compilerOptions": {
-    "target": "ES6",                         
-    "module": "CommonJS",                    
-    "rootDir": "./src",                      
-    "outDir": "./dist",                      
-    "strict": true,                          
-    "esModuleInterop": true,                 
-    "skipLibCheck": true                     
+    "target": "ES6",
+    "module": "CommonJS",
+    "rootDir": "./src",
+    "outDir": "./dist",
+    "strict": true,
+    "esModuleInterop": true,
+    "skipLibCheck": true
   },
-  "include": ["src"],
+  "include": ["src", "seeders"],
   "exclude": ["node_modules"]
 }
