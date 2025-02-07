@@ -1,4 +1,4 @@
-import { v2 as cloudinary } from "cloudinary";
+import { v2 as cloudinary, UploadApiErrorResponse, UploadApiResponse } from "cloudinary";
 import dotenv from "dotenv";
 
 
@@ -13,35 +13,62 @@ cloudinary.config({
 export default cloudinary;
 
 export const uploadImage = async (file: Express.Multer.File) => {
-  if (!file) throw new Error("Missing required parameter - file");
+  if (!file) {
+    console.error("❌ Error: Missing required parameter - file.");
+    throw new Error("Missing required parameter - file");
+  }
 
-  return new Promise((resolve, reject) => {
-    cloudinary.uploader.upload_stream(
-      { folder: "TradePeople_(Client_Work)" }, 
-      (error, result) => {
-        if (error) return reject(error);
+  return new Promise<{ publicId: string; url: string }>((resolve, reject) => {
+    const uploadStream = cloudinary.uploader.upload_stream(
+      { folder: "TradePeople_(Client_Work)" },
+      (error: UploadApiErrorResponse | undefined, result: UploadApiResponse | undefined) => {
+        if (error) {
+          console.error("❌ Cloudinary Upload Error:", error);
+          return reject(new Error(`Cloudinary upload failed: ${error.message}`));
+        }
+        
+        if (!result) {
+          console.error("❌ Cloudinary response is undefined or null.");
+          return reject(new Error("Cloudinary upload failed: No response received."));
+        }
+
+        console.log("✅ Cloudinary Upload Successful:", {
+          publicId: result.public_id,
+          url: result.secure_url,
+        });
+
         resolve({
-          publicId: result?.public_id,
-          url: result?.secure_url
+          publicId: result.public_id,
+          url: result.secure_url,
         });
       }
-    ).end(file.buffer); 
+    );
+
+    uploadStream.end(file.buffer);
   });
 };
 
-
 export const deleteImage = async (publicId: string) => {
-try {
-  const result = await cloudinary.uploader.destroy(publicId);
-  if (result.result === "ok") {
-    return "Image deleted successfully";
-  } else {
-    throw new Error("Failed to delete image");
+  if (!publicId) throw new Error("Missing required parameter - publicId");
+
+  try {
+    const result = await cloudinary.uploader.destroy(publicId);
+
+    if (result?.result === "ok") {
+      return { success: true, message: "Image deleted successfully" };
+    } else {
+      console.error(`Cloudinary deletion failed for Public ID: ${publicId}`, result);
+      throw new Error("Failed to delete image from Cloudinary.");
+    }
+  } catch (error: any) {
+    console.error("Error deleting image from Cloudinary:", {
+      publicId,
+      message: error.message,
+      stack: error.stack,
+    });
+
+    throw new Error(`Image deletion failed: ${error.message || "Unknown error"}`);
   }
-} catch (error) {
-  console.error(error);
-  throw new Error("Image deletion failed");
-}
 };
 
 

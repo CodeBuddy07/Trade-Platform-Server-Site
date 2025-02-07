@@ -7,6 +7,6 @@ import { TradesPerson } from "../../../models/tradePerson";
 
 export const getUser = catchAsync(async (req: CustomRequest, res: Response, next: NextFunction) => {
     const {id} = req.params;
-    const user = await Customer.findById(id).select("_id firstName lastName email phone profileImage trade").populate("trade") || await TradesPerson.findById(id).select("_id firstName lastName email phone profileImage trade").populate("trade")  || await Admin.findById(id).select("_id firstName lastName email phone profileImage trade").populate("trade");
+    const user = await Customer.findById(id).select("_id firstName lastName bio email phone profileImage trade").populate("trade") || await TradesPerson.findById(id).select("_id firstName lastName bio businessType email phone profileImage trade").populate("trade")  || await Admin.findById(id).select("_id firstName lastName bio email phone profileImage trade").populate("trade");
     console.log(user);
 })

@@ -7,6 +7,7 @@ import tradeRoutes from "./routes/tradeRoutes";
 import serviceAreaRoutes from "./routes/serviceAreaRoutes";
 import jwtRoutes from "./routes/jwtRoutes";
 import authRoutes from "./routes/authRoutes";
+import tradePersonRoutes from "./routes/tradePersonRoutes";
 import cookieParser from 'cookie-parser';
 
 
@@ -31,6 +32,7 @@ app.use(cookieParser())
 
 app.use("/api/auth", authRoutes); 
 app.use("/api/auth", jwtRoutes); 
+app.use("/api", tradePersonRoutes); 
 app.use("/api", tradeRoutes); 
 app.use("/api", serviceAreaRoutes); 
 

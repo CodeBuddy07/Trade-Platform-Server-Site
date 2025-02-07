@@ -30,7 +30,11 @@ export interface ITradePerson extends Document {
   businessType?: string;
   companyWebsite?: string;
   employeeCount?: number;
-  jobGalleries?: string[]; // Array of Cloudinary URLs
+  jobGalleries: [{
+    publicId: string | null;
+    url: string | null;
+  }
+];
   skills?: string[]; // Array of skill names
   homeAddress?: {
     addressLine1: string;
@@ -117,7 +121,24 @@ const TradePersonSchema = new Schema<ITradePerson>(
     businessType: { type: String },
     companyWebsite: { type: String, match: /^https?:\/\/.*/ },
     employeeCount: { type: Number, min: 1, max: 5000 },
-    jobGalleries: { type: [String], validate: (arr: string[]) => arr.every((url) => /^https?:\/\/.*/.test(url)) },
+    jobGalleries: [
+      {
+        publicId: {
+          type: String,
+          default: null, // Optional if the image is not required
+        },
+        url: {
+          type: String,
+          default: null,
+          validate: {
+            validator: function (value: string) {
+              return /^https?:\/\/.*/.test(value);
+            },
+            message: "Invalid URL format",
+          },
+        },
+      },
+    ],
     skills: { type: [String] }, // Array of skill names
 
     homeAddress: {
@@ -137,5 +158,76 @@ const TradePersonSchema = new Schema<ITradePerson>(
   },
   { timestamps: true }
 );
+
+// Helper function to check if a field is filled
+function isFilled(value: any): boolean {
+  if (value === undefined || value === null) return false; // Skip undefined or null
+  if (typeof value === "string" && value.trim() === "") return false; // Empty strings are not filled
+  if (Array.isArray(value) && value.length === 0) return false; // Empty arrays are not filled
+  if (typeof value === "object" && Object.keys(value).length === 0) return false; // Empty objects are not filled
+  return true; // Otherwise consider it filled
+}
+
+// Recursive function to iterate over an object or array
+function countFilledFields(data: any): number {
+  let filledFields = 0;
+
+  // If it's an object, iterate through its properties
+  if (typeof data === "object" && !Array.isArray(data)) {
+    for (const key in data) {
+      if (data.hasOwnProperty(key)) {
+        if (isFilled(data[key])) {
+          filledFields++;
+        }
+        // Recursively count for nested objects
+        if (typeof data[key] === "object") {
+          filledFields += countFilledFields(data[key]);
+        }
+      }
+    }
+  }
+  // If it's an array, check each element
+  else if (Array.isArray(data)) {
+    data.forEach(item => {
+      if (isFilled(item)) {
+        filledFields++;
+      }
+      // Recursively count for nested arrays/objects
+      if (typeof item === "object") {
+        filledFields += countFilledFields(item);
+      }
+    });
+  }
+
+  return filledFields;
+}
+
+// Main function to calculate profile completion
+TradePersonSchema.virtual("profileCompletion").get(function (this: ITradePerson) {
+  const data = this.toObject({ virtuals: false });
+  const ignoredFields = ["_id", "__v", "createdAt", "updatedAt"];
+
+  // Count total relevant fields (excluding ignored fields)
+  const totalFields = Object.keys(TradePersonSchema.paths).filter(
+    (field) => !ignoredFields.includes(field)
+  ).length;
+
+  // Count the filled fields using the recursive function
+  let filledFields = 0;
+  Object.keys(data).forEach(key => {
+    if (!ignoredFields.includes(key)) {
+      filledFields += countFilledFields(data[key]);
+    }
+  });
+
+  // Calculate and return the completion percentage
+  return Math.round((filledFields / totalFields) * 100);
+  //return totalFields;
+});
+
+
+
+TradePersonSchema.set("toJSON", { virtuals: true });
+TradePersonSchema.set("toObject", { virtuals: true });
 
 export const TradesPerson = mongoose.model<ITradePerson>("TradePerson", TradePersonSchema);
