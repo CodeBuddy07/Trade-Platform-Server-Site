@@ -12,8 +12,10 @@ export interface CustomRequest extends Request {
 export const jwtVarify = catchAsync(async (req: CustomRequest, res: Response, next: NextFunction)=> {
   
     try {
-      const id = req.user.id
-      const user = await Customer.findById(id).select("_id firstName lastName email phone profileImage trade").populate("trade") || await TradesPerson.findById(id).select("_id firstName lastName email phone profileImage trade").populate("trade")  || await Admin.findById(id).select("_id firstName lastName email phone profileImage trade").populate("trade");
+      const id = req.user.id; 
+      const user = await Customer.findById(id).select("_id firstName lastName email bio profileCompletion phone profileImage trade") || await TradesPerson.findById(id).select("_id firstName lastName email bio profileCompletion phone profileImage trade").populate("trade")  || await Admin.findById(id).select("_id firstName lastName email bio profileCompletion phone profileImage trade");
+
+
       res.json({
         success: true,
         message: 'User Varified.',

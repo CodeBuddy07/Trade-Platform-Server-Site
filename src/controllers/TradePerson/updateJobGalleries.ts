@@ -92,11 +92,14 @@ export const deleteJobImage = catchAsync(
       await deleteImage(imageUrl.publicId);
 
       // Update the database by removing the image from jobGalleries
+
       const updatedTradePerson = await TradesPerson.findByIdAndUpdate(
         tradePersonID,
         { $pull: { jobGalleries: {publicId: imageUrl.publicId} } }, // Remove from the array
         { new: true }
       );
+      
+
 
       res.status(200).json({
         success: true,

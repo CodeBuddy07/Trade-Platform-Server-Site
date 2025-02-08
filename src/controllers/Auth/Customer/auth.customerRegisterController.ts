@@ -1,61 +1,59 @@
 import { Request, Response, NextFunction } from "express";
 import bcrypt from "bcryptjs";
 import jwt from "jsonwebtoken";
-import { Customer } from "../../../models/customer";
 import catchAsync from "../../../utils/catchAsync";
 import { createAppError } from "../../../middlewares/error";
 import { uploadImage } from "../../../config/cloudinary";
+import { Customer } from "../../../models/customer";
+import { TradesPerson } from "../../../models/tradePerson";
+import { Admin } from "../../../models/admin";
 
 
 
 export const registerCustomer = catchAsync(
   async (req: Request, res: Response, next: NextFunction) => {
-    const {
-      fullName,
-      email,
-      password,
-      phoneNumber,
-      serviceArea,
-      preferredTrades,
-    } = req.body;
-    let profilePhoto = null;
+    const { firstName, lastName, phone, email, postCode, password } = req.body;
 
-    if (req.file) {
-      try {
-        profilePhoto =  await uploadImage(req.file);
-      } catch (error) {
-        return next(createAppError("Image upload failed", 500));
-      }
-    }
+    const {profileImage} = req.files as { [fieldname: string]: Express.Multer.File[] };
+    let profileImageURL = null;
 
+    const existingUser =  await Customer.findOne({ email }) || await TradesPerson.findOne({ email })  || await Admin.findOne({ email });
 
-    const existingUser = await Customer.findOne({ email });
     if (existingUser) {
       return next(createAppError("Email already exists!", 400));
     }
 
-    const existingPhoneNumber = await Customer.findOne({ phoneNumber });
+    const existingPhoneNumber = await TradesPerson.findOne({ phone }) || await Admin.findOne({ phone }) || await Customer.findOne({ phone });
+        
     if (existingPhoneNumber) {
       return next(createAppError("Phone number already exists!", 400));
     }
 
+    try {
+      profileImageURL = await uploadImage(profileImage[0]);
+    } catch (error) {
+      return next(createAppError("Profile Image upload failed", 500));
+    }
+
+    // console.log("dsas", profileImage);
+
 
     const hashedPassword = await bcrypt.hash(password, 12);
 
-
     const newCustomer = await Customer.create({
-      fullName,
+      firstName,
+      lastName,
+      phone,
       email,
+      postCode,
+      profileImage: profileImageURL,
       password: hashedPassword,
-      phoneNumber,
-      serviceArea,
-      preferredTrades,
-      profilePhoto,
+      role: "customer"
     });
 
 
     const token = jwt.sign(
-      { id: newCustomer._id },
+      { id: newCustomer._id, role: "customer" },
       process.env.JWT_SECRET as string,
       { expiresIn: "1h" }
     );
@@ -68,15 +66,8 @@ export const registerCustomer = catchAsync(
     };
 
     res.status(201).cookie("token", token, cookieOptions).json({
+      success: true,
       message: "Registration successful, please log in!",
-      token,
-      customer: {
-        id: newCustomer._id,
-        fullName: newCustomer.fullName,
-        email: newCustomer.email,
-        phoneNumber: newCustomer.phoneNumber,
-        profilePhoto: newCustomer.profilePhoto,
-      },
     });
   }
 );

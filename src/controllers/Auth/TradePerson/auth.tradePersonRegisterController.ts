@@ -5,6 +5,8 @@ import { TradesPerson } from "../../../models/tradePerson";
 import catchAsync from "../../../utils/catchAsync";
 import { uploadImage } from "../../../config/cloudinary";
 import { createAppError } from "../../../middlewares/error";
+import { Customer } from "../../../models/customer";
+import { Admin } from "../../../models/admin";
 
 
 export const registerTradesPerson = catchAsync(
@@ -15,7 +17,15 @@ export const registerTradesPerson = catchAsync(
     const {insuranceImage} = req.files as { [fieldname: string]: Express.Multer.File[] };
     const {licenseImage} = req.files as { [fieldname: string]: Express.Multer.File[] };
 
-   
+    const existingUser =  await Customer.findOne({ email }) || await TradesPerson.findOne({ email })  || await Admin.findOne({ email });
+    if (existingUser) {
+      return next(createAppError("Email already exists!", 400));
+    }
+
+    const existingPhoneNumber = await TradesPerson.findOne({ phone }) || await Admin.findOne({ phone }) || await Customer.findOne({ phone });
+    if (existingPhoneNumber) {
+      return next(createAppError("Phone number already exists!", 400));
+    }
 
     let profileImageURL = null;
     let insuranceImageURL = null;
@@ -44,16 +54,6 @@ export const registerTradesPerson = catchAsync(
       } catch (error) {
         return next(createAppError("License Image upload failed", 500));
       }
-    }
-
-    const existingUser = await TradesPerson.findOne({ email });
-    if (existingUser) {
-      return next(createAppError("Email already exists!", 400));
-    }
-
-    const existingPhoneNumber = await TradesPerson.findOne({ phone });
-    if (existingPhoneNumber) {
-      return next(createAppError("Phone number already exists!", 400));
     }
 
 

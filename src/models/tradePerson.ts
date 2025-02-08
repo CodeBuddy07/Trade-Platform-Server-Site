@@ -189,7 +189,9 @@ function countFilledFields(data: any): number {
   // If it's an array, check each element
   else if (Array.isArray(data)) {
     data.forEach(item => {
+      console.log("item =",item);
       if (isFilled(item)) {
+        console.log("item i filled and value is =",filledFields );
         filledFields++;
       }
       // Recursively count for nested arrays/objects
@@ -202,32 +204,26 @@ function countFilledFields(data: any): number {
   return filledFields;
 }
 
-// Main function to calculate profile completion
-TradePersonSchema.virtual("profileCompletion").get(function (this: ITradePerson) {
-  const data = this.toObject({ virtuals: false });
-  const ignoredFields = ["_id", "__v", "createdAt", "updatedAt"];
 
-  // Count total relevant fields (excluding ignored fields)
+
+ function calculateProfileCompletion(user: any): number {
+  const ignoredFields = ["_id", "__v", "createdAt", "updatedAt"];
   const totalFields = Object.keys(TradePersonSchema.paths).filter(
     (field) => !ignoredFields.includes(field)
   ).length;
 
-  // Count the filled fields using the recursive function
   let filledFields = 0;
-  Object.keys(data).forEach(key => {
+
+  Object.keys(user).forEach((key) => {
     if (!ignoredFields.includes(key)) {
-      filledFields += countFilledFields(data[key]);
+      filledFields += countFilledFields(user[key]); // Your recursive function
     }
   });
 
-  // Calculate and return the completion percentage
-  return Math.round((filledFields / totalFields) * 100);
-  //return totalFields;
-});
+  const completionPercentage = Math.round((filledFields / totalFields) * 100);
+  console.log(completionPercentage);
+  return completionPercentage > 100 ? 100 : completionPercentage;
+}
 
-
-
-TradePersonSchema.set("toJSON", { virtuals: true });
-TradePersonSchema.set("toObject", { virtuals: true });
 
 export const TradesPerson = mongoose.model<ITradePerson>("TradePerson", TradePersonSchema);
